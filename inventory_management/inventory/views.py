@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
@@ -20,7 +21,18 @@ class Dashboard(LoginRequiredMixin, View):
             quantity__lte=LOW_QUANTITY
         )
 
-        return render(request, 'inventory/dashboard.html', {'items': items})
+        if low_inventory.count()>0:
+            if low_inventory.count()>1:
+                messages.error(request, f'{low_inventory.count()} items have low inventory')
+            else:
+                messages.error(request, f'{low_inventory.count()} item has low inventory')
+
+        low_inventory_ids = InventoryItem.objects.filter(
+            user=self.request.user.id,
+            quantity__lte=LOW_QUANTITY
+        ).values_list('id', flat=True)
+
+        return render(request, 'inventory/dashboard.html', {'items': items, 'low_inventory_ids': low_inventory_ids})
 
 class SignUpView(View):
     def get(self, request):
